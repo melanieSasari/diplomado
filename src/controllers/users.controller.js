@@ -145,6 +145,7 @@ async function getUsersList(req, res, next) {
     const search = req.query.search?.trim() || '';
     const orderBy = req.query.orderBy || 'id';
     const orderDir = req.query.orderDir?.toUpperCase() || 'DESC';
+    const status = req.query.status || '';
 
     const page = pageNum > 0 ? pageNum : 1;
     const limit = [5, 10, 15, 20].includes(limitNum) ? limitNum : 10;
@@ -164,6 +165,18 @@ async function getUsersList(req, res, next) {
           }
         }
       : {};
+
+    if (status) {
+    console.log('stat', status)
+    if (status !== Status.ACTIVE && status !== Status.INACTIVE)
+      return res.status(400).json({
+        message: `Invalid status, must be ${Status.ACTIVE} or ${Status.INACTIVE}`,
+      });
+    where.status = {
+      [Op.iLike]: `${status}`,
+    };
+    where.status = status;
+  }
 
     const { count: total, rows: data } = await User.findAndCountAll({
       attributes: ['id', 'username', 'status'],
