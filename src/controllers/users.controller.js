@@ -54,20 +54,31 @@ async function getUser(req, res, next) {
 async function updateUser(req, res, next) {
   const { id } = req.params;
   const { username, password } = req.body;
+
   try {
     if (!username && !password) {
-      return res.status(400).json({ message: 'Username and password are required' });
+      return res.status(400).json({ message: 'Username and/or password are required' });
     }
-    const passwordEncrypted = await encriptar(password);
 
-    const user = await User.update({
-      username,
-      password: passwordEncrypted,
-    }, {
-      where: {
-        id,
-      },
-    })
+    const updateData = {};
+
+    if (username) updateData.username = username;
+    if (password) {
+      const passwordEncrypted = await encriptar(password);
+      updateData.password = passwordEncrypted;
+    }
+
+    const [updatedRows] = await User.update(updateData, {
+      where: { id },
+    });
+
+    if (updatedRows === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ['password'] },
+    });
 
     res.json(user);
   } catch (error) {
